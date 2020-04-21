@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using FriendOrganizer.UI.Data;
 using FriendOrganizer.UI.ViewModel;
+using FriendOrganizer.DataAccess;
 
 namespace FriendOrganizer.UI.Startup
 {
@@ -14,9 +15,13 @@ namespace FriendOrganizer.UI.Startup
         public IContainer Bootstrap()
         {
             var builder = new ContainerBuilder();
-            
+
+            builder.RegisterType<FriendOrganizerDbContext>().AsSelf();
             builder.RegisterType<MainViewModel>().AsSelf();
             builder.RegisterType<MainWindow>().AsSelf();
+            builder.RegisterType<NavigationviewModel>().As<INavigationViewModel>();
+            builder.RegisterType<FriendDatailViewModel>().As<IFriendDatailViewModel>();
+            builder.RegisterType<LookupDataService>().AsImplementedInterfaces();
             builder.RegisterType<FriendDataService>().As<IFriendDataService>();
             return builder.Build();
 
