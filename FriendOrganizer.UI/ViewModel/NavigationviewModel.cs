@@ -1,5 +1,7 @@
 ﻿using FriendOrganizer.Model;
 using FriendOrganizer.UI.Data;
+using FriendOrganizer.UI.Event;
+using Prism.Events;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -9,25 +11,55 @@ using System.Threading.Tasks;
 
 namespace FriendOrganizer.UI.ViewModel
 {
-    public class NavigationviewModel : INavigationViewModel
+    public class NavigationviewModel : ViewModelBase, INavigationViewModel
     {
         private IFriendLookupDataService _friendLookupService;
+        private IEventAggregator _eventAggregator;
 
-        public ObservableCollection<LookupItem> Friends { get; }
+        public ObservableCollection<NavigationItemViewModel> Friends { get; }
 
-        public NavigationviewModel(IFriendLookupDataService friendLookupService)
+        public NavigationviewModel(IFriendLookupDataService friendLookupService,
+            IEventAggregator eventAggregator)
         {
             _friendLookupService = friendLookupService;
-            Friends = new ObservableCollection<LookupItem>();
+            _eventAggregator = eventAggregator;
+            Friends = new ObservableCollection<NavigationItemViewModel>();
+            _eventAggregator.GetEvent<AfterFriendSavedEvent>().Subscribe(AfterFriendSaved);
         }
+
+        private void AfterFriendSaved(AfterFriendSavedEventArgs obj)
+        {
+           var lookupItem = Friends.Single(l => l.Id == obj.Id);
+            lookupItem.DisplayMember = obj.DisplayMember;
+        }
+
         public async Task LoadAsync()
         {
             var lookup = await _friendLookupService.GetFriendLookupAsync();
             Friends.Clear();
             foreach(var item in lookup)
             {
-                Friends.Add(item);
+                Friends.Add(new NavigationItemViewModel(item.ID,item.DisplayMember));
             }
         }
+
+        private NavigationItemViewModel _selectedFriend;
+
+        public NavigationItemViewModel SelectedFriend
+        {
+            get { return _selectedFriend; }
+            set { _selectedFriend = value;
+                OnPropertyChange();
+                if (_selectedFriend != null)
+                {
+                    _eventAggregator.GetEvent<OpenFriendDatailViewEvent>()
+                        .Publish(_selectedFriend.Id);
+                }
+
+            }
+        }
+
     }
+
+
 }
